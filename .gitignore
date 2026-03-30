@@ -27,3 +27,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Documentación interna e historial de la IA
+/vibe_coding_checlist/
+RESUMEN_DESARROLLO.md
+PROMPT_ARQUITECTO.md

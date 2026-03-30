@@ -8,21 +8,21 @@
 
 **SIA Técnica 4** es una plataforma web desarrollada a la medida para la gestión de alumnos, expedientes y control administrativo para la Escuela Secundaria Técnica 4. Cuenta con un sistema escalable basado en roles (RBAC) y un enfoque de diseño inspirado en Material Design 3.
 
-## 🚀 Características Principales
+##  Características Principales
 
 *   **Autenticación por Roles:** Acceso segmentado para Dirección, Subdirección, Control Escolar, Trabajo Social, etc. mediante Firebase Auth.
 *   **Búsqueda y Filtros en Tiempo Real:** Filtros hiper-rápidos para buscar alumnos por grado, grupo, nombre o matrícula.
 *   **Expediente Digital Centralizado:** Interfaz estilo modal con 8 pestañas detalladas por alumno (Generales, Familia, Docs, FIA, Conducta, Calificaciones, etc.).
 *   **Diseño Modular y Responsivo:** Construido con componentes re-usables y clases puras de Tailwind V4 para adaptarse a móviles, tablets y escritorio.
 
-## 🛠️ Stack Tecnológico
+##  Stack Tecnológico
 
 *   **Frontend:** React 19, Vite
 *   **Estilos:** Tailwind CSS v4, Google Material Symbols
 *   **Backend as a Service:** Firebase (Auth, Cloud Firestore)
 *   **Routing:** React Router v7 con rutas protegidas (`ProtectedRoute`)
 
-## 📂 Arquitectura de Documentación
+##  Arquitectura de Documentación
 
 El proyecto se guía fuertemente bajo un método de *AI-Assisted Vibe Coding*. La documentación de arquitectura, base de datos y diseño se encuentra centralizada en:
 *   `/vibe_coding_checlist/PRD.md` - Documento de Requisitos de Producto.
@@ -30,7 +30,7 @@ El proyecto se guía fuertemente bajo un método de *AI-Assisted Vibe Coding*. L
 *   `/vibe_coding_checlist/tech_stack.md` - Elección tecnológica y estrategias.
 *   `/vibe_coding_checlist/todo.md` - Mapa de ruta y tareas pendientes por fases.
 
-## ⚙️ Instalación y Desarrollo LocaL
+##  Instalación y Desarrollo LocaL
 
 1. Clonar el repositorio:
    ```bash
