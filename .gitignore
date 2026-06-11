@@ -15,7 +15,6 @@ dist-ssr
 # Variables de entorno — NO subir credenciales de Firebase
 .env
 .env.*
-!.env.example
 
 # Editor directories and files
 .vscode/*
@@ -32,3 +31,8 @@ dist-ssr
 /vibe_coding_checlist/
 RESUMEN_DESARROLLO.md
 PROMPT_ARQUITECTO.md
+
+# Herramientas de desarrollo (Claude Code / Firebase CLI)
+.agents/
+skills-lock.json
+.firebase/

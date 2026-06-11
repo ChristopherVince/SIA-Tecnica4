@@ -6,7 +6,8 @@ import Dashboard from './pages/Dashboard'
 import SinAcceso from './pages/SinAcceso'
 import DireccionDashboard from './pages/role-dashboards/DireccionDashboard'
 import SubdireccionDashboard from './pages/role-dashboards/SubdireccionDashboard'
-import ControlEscolarDashboard from './pages/role-dashboards/ControlEscolarDashboard'
+import ControlEscolarMatutinoDashboard from './pages/role-dashboards/ControlEscolarMatutinoDashboard'
+import ControlEscolarVespertinoDashboard from './pages/role-dashboards/ControlEscolarVespertinoDashboard'
 import CoordinacionesDashboard from './pages/role-dashboards/CoordinacionesDashboard'
 import TrabajoSocialDashboard from './pages/role-dashboards/TrabajoSocialDashboard'
 import PrefecturaDashboard from './pages/role-dashboards/PrefecturaDashboard'
@@ -35,7 +36,8 @@ function App() {
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['control_escolar']} />}>
-            <Route path="/dashboard/control-escolar" element={<ControlEscolarDashboard />} />
+            <Route path="/dashboard/control-escolar/matutino" element={<ControlEscolarMatutinoDashboard />} />
+            <Route path="/dashboard/control-escolar/vespertino" element={<ControlEscolarVespertinoDashboard />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['coordinaciones']} />}>

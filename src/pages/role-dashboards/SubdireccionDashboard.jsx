@@ -1,55 +1,49 @@
 import { useAuth } from '../../context/AuthContext'
-import DashboardHeader from '../../components/DashboardHeader'
+import Layout from '../../components/layout/Layout'
 
-const SUBDIRECCION_CONFIG = {
+const CONFIG = {
   label: 'Subdirección',
-  badgeClasses: 'bg-indigo-100 text-indigo-800 ring-1 ring-indigo-300',
-  headerGradient: 'bg-gradient-to-r from-indigo-700 to-indigo-950',
+  badgeClasses: 'bg-indigo-100 text-indigo-800 border border-indigo-200',
+  color: 'indigo',
 }
 
 function SubdireccionDashboard() {
   const { currentUser } = useAuth()
-  const nombre = currentUser?.nombre ?? currentUser?.email
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <DashboardHeader
-        nombreUsuario={nombre}
-        rolLabel={SUBDIRECCION_CONFIG.label}
-        rolConfig={SUBDIRECCION_CONFIG}
-      />
+    <Layout user={currentUser} roleConfig={CONFIG} roleId="subdireccion">
+      <div className="mb-8">
+        <h1 className="text-2xl font-headline font-bold text-slate-900">Panel de Subdirección</h1>
+        <p className="text-sm text-slate-500 mt-1">Supervisión académica y coordinación general.</p>
+      </div>
 
-      <header className={SUBDIRECCION_CONFIG.headerGradient + ' text-white'}>
-        <div className="max-w-6xl mx-auto px-6 py-10">
-          <h1 className="text-3xl font-bold mb-2">Panel de Subdirección</h1>
-          <p className="text-white/70">Supervisión académica y disciplinaria del plantel</p>
+      <div className="bg-surface-lowest rounded-xl shadow-sm border border-slate-200/60 p-8 text-center max-w-4xl mx-auto">
+        <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-4">
+          <span className="material-symbols-outlined text-indigo-600 text-3xl">admin_panel_settings</span>
         </div>
-      </header>
+        <h2 className="text-2xl font-headline font-bold text-slate-900 mb-2">Supervisión General</h2>
+        <p className="text-slate-600 mb-6 max-w-md mx-auto text-sm">
+          Vista general de estadísticas y control académico de todos los turnos.
+        </p>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-            </svg>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+          <div className="p-5 bg-indigo-50/50 border border-indigo-100 rounded-xl hover:bg-indigo-50 transition-colors cursor-pointer text-left">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="material-symbols-outlined text-indigo-600">bar_chart</span>
+              <p className="text-sm font-headline font-bold text-indigo-900">Métricas</p>
+            </div>
+            <p className="text-xs text-indigo-700">Analítica de rendimiento y asistencia general.</p>
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Panel de Supervisión</h2>
-          <p className="text-slate-600 mb-6 max-w-md mx-auto">
-            Supervisa la academia y disciplina de los alumnos de la institución.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-            <div className="p-4 bg-indigo-50 rounded-lg">
-              <p className="text-sm font-medium text-indigo-900">👥 Expedientes</p>
-              <p className="text-xs text-indigo-700 mt-1">Consulta historial del alumno</p>
+          <div className="p-5 bg-indigo-50/50 border border-indigo-100 rounded-xl hover:bg-indigo-50 transition-colors cursor-pointer text-left">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="material-symbols-outlined text-indigo-600">groups</span>
+              <p className="text-sm font-headline font-bold text-indigo-900">Plantilla</p>
             </div>
-            <div className="p-4 bg-indigo-50 rounded-lg">
-              <p className="text-sm font-medium text-indigo-900">📊 Reportes</p>
-              <p className="text-xs text-indigo-700 mt-1">Monitoreo de disciplina</p>
-            </div>
+            <p className="text-xs text-indigo-700">Revisión del personal docente y horarios.</p>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </Layout>
   )
 }
 

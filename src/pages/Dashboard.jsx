@@ -7,7 +7,6 @@ import { useEffect } from 'react'
 const ROLE_PATHS = {
   'direccion': '/dashboard/direccion',
   'subdireccion': '/dashboard/subdireccion',
-  'control_escolar': '/dashboard/control-escolar',
   'coordinaciones': '/dashboard/coordinaciones',
   'trabajo_social': '/dashboard/trabajo-social',
   'prefectura': '/dashboard/prefectura',
@@ -192,8 +191,15 @@ function Dashboard() {
 
   // Redirige automáticamente al dashboard específico del rol
   useEffect(() => {
-    if (currentUser?.rol && ROLE_PATHS[currentUser.rol]) {
-      navigate(ROLE_PATHS[currentUser.rol], { replace: true })
+    if (currentUser?.rol) {
+      if (currentUser.rol === 'control_escolar') {
+        const path = currentUser.turno === 'vespertino' 
+          ? '/dashboard/control-escolar/vespertino' 
+          : '/dashboard/control-escolar/matutino';
+        navigate(path, { replace: true })
+      } else if (ROLE_PATHS[currentUser.rol]) {
+        navigate(ROLE_PATHS[currentUser.rol], { replace: true })
+      }
     }
   }, [currentUser, navigate])
 

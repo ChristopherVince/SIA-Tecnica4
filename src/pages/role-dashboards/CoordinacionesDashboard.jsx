@@ -1,55 +1,49 @@
 import { useAuth } from '../../context/AuthContext'
-import DashboardHeader from '../../components/DashboardHeader'
+import Layout from '../../components/layout/Layout'
 
-const COORDINACIONES_CONFIG = {
+const CONFIG = {
   label: 'Coordinaciones',
-  badgeClasses: 'bg-violet-100 text-violet-800 ring-1 ring-violet-300',
-  headerGradient: 'bg-gradient-to-r from-violet-700 to-violet-950',
+  badgeClasses: 'bg-purple-100 text-purple-800 border border-purple-200',
+  color: 'purple',
 }
 
 function CoordinacionesDashboard() {
   const { currentUser } = useAuth()
-  const nombre = currentUser?.nombre ?? currentUser?.email
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <DashboardHeader
-        nombreUsuario={nombre}
-        rolLabel={COORDINACIONES_CONFIG.label}
-        rolConfig={COORDINACIONES_CONFIG}
-      />
+    <Layout user={currentUser} roleConfig={CONFIG} roleId="coordinaciones">
+      <div className="mb-8">
+        <h1 className="text-2xl font-headline font-bold text-slate-900">Panel de Coordinaciones</h1>
+        <p className="text-sm text-slate-500 mt-1">Gestión académica por áreas y academias.</p>
+      </div>
 
-      <header className={COORDINACIONES_CONFIG.headerGradient + ' text-white'}>
-        <div className="max-w-6xl mx-auto px-6 py-10">
-          <h1 className="text-3xl font-bold mb-2">Panel de Coordinaciones</h1>
-          <p className="text-white/70">Seguimiento por grupo y área académica</p>
+      <div className="bg-surface-lowest rounded-xl shadow-sm border border-slate-200/60 p-8 text-center max-w-4xl mx-auto">
+        <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-4">
+          <span className="material-symbols-outlined text-purple-600 text-3xl">category</span>
         </div>
-      </header>
+        <h2 className="text-2xl font-headline font-bold text-slate-900 mb-2">Academias</h2>
+        <p className="text-slate-600 mb-6 max-w-md mx-auto text-sm">
+          Planeación y evaluación del cuerpo docente por asignatura técnica o general.
+        </p>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-violet-100 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10h.01M11 10h.01M7 10h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+          <div className="p-5 bg-purple-50/50 border border-purple-100 rounded-xl hover:bg-purple-50 transition-colors cursor-pointer text-left">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="material-symbols-outlined text-purple-600">book</span>
+              <p className="text-sm font-headline font-bold text-purple-900">Planeaciones</p>
+            </div>
+            <p className="text-xs text-purple-700">Revisión de planes de estudio y secuencias didácticas.</p>
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Seguimiento Académico</h2>
-          <p className="text-slate-600 mb-6 max-w-md mx-auto">
-            Coordina grupos y monitorea el desempeño académico por área.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-            <div className="p-4 bg-violet-50 rounded-lg">
-              <p className="text-sm font-medium text-violet-900">👥 Grupos</p>
-              <p className="text-xs text-violet-700 mt-1">Alumnos segmentados por grado</p>
+          <div className="p-5 bg-purple-50/50 border border-purple-100 rounded-xl hover:bg-purple-50 transition-colors cursor-pointer text-left">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="material-symbols-outlined text-purple-600">fact_check</span>
+              <p className="text-sm font-headline font-bold text-purple-900">Evaluaciones</p>
             </div>
-            <div className="p-4 bg-violet-50 rounded-lg">
-              <p className="text-sm font-medium text-violet-900">📋 Reportes</p>
-              <p className="text-xs text-violet-700 mt-1">Vinculados a tu área académica</p>
-            </div>
+            <p className="text-xs text-purple-700">Seguimiento a los métodos y criterios de evaluación.</p>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </Layout>
   )
 }
 

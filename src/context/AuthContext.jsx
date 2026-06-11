@@ -16,9 +16,9 @@ export function AuthProvider({ children }) {
         try {
           const snap = await getDoc(doc(db, 'usuarios', firebaseUser.uid))
           if (snap.exists()) {
-            const { nombre, rol } = snap.data()
-            console.log('✅ Usuario encontrado:', { nombre, rol, uid: firebaseUser.uid })
-            setCurrentUser({ ...firebaseUser, nombre, rol })
+            const { nombre, rol, turno } = snap.data()
+            console.log('✅ Usuario encontrado:', { nombre, rol, turno, uid: firebaseUser.uid })
+            setCurrentUser({ ...firebaseUser, nombre, rol, turno })
           } else {
             // El usuario existe en Auth pero no tiene documento en Firestore
             console.warn('⚠️ Usuario en Auth pero NO en Firestore:', firebaseUser.uid)
