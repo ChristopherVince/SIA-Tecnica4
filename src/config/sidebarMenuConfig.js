@@ -34,6 +34,7 @@ export const SIDEBAR_MENU_CONFIG = {
       icon: 'grade',
       submenu: [
         { id: 'evaluacion_bloque', name: 'Evaluación de Bloque', icon: 'assignment_turned_in', action: 'evaluacion_bloque' },
+        { id: 'inasistencias', name: 'Inasistencias', icon: 'event_busy', action: 'inasistencias' },
         { id: 'evaluaciones_recuperacion', name: 'Evaluaciones de Recuperación', icon: 'healing', action: 'evaluaciones_recuperacion' },
         { id: 'boletas', name: 'Boletas', icon: 'description', action: 'boletas' },
       ],
@@ -64,10 +65,25 @@ export const SIDEBAR_MENU_CONFIG = {
   ],
   
   trabajo_social: [
-    { id: 'dashboard', name: 'Dashboard', icon: 'dashboard', path: '/dashboard/trabajo-social' },
-    { id: 'estudiantes', name: 'Padrón de Alumnos', icon: 'groups', path: '#' },
-    { id: 'expedientes', name: 'Expedientes Sociales', icon: 'folder_open', path: '#' },
-    { id: 'seguimiento', name: 'Seguimiento', icon: 'trending_up', path: '#' },
+    { id: 'inicio', name: 'Inicio', icon: 'home', action: 'inicio' },
+    {
+      id: 'expedientes',
+      name: 'Expedientes',
+      icon: 'folder_shared',
+      submenu: [
+        { id: 'busqueda_alumnos', name: 'Búsqueda de Alumnos', icon: 'person_search', action: 'expedientes' },
+        { id: 'fichas_medicas', name: 'Fichas Médicas', icon: 'medical_information', action: 'fichas_medicas' },
+      ],
+    },
+    { id: 'control_docs', name: 'Control de Documentos', icon: 'checklist', action: 'control_documentos' },
+    {
+      id: 'seguimiento',
+      name: 'Seguimiento',
+      icon: 'policy',
+      submenu: [
+        { id: 'citatorios', name: 'Citatorios y Reportes', icon: 'notification_important', action: 'citatorios' },
+      ],
+    },
   ],
   
   prefectura: [

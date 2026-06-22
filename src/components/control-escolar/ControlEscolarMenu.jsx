@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import InscripcionesView from './funcionalidades/InscripcionesView'
 import AsignacionTallerView from './funcionalidades/AsignacionTallerView'
 import EvaluacionBloqueView from './funcionalidades/evaluacion-bloque/EvaluacionBloqueView'
+import InasistenciasView from './funcionalidades/evaluacion-bloque/InasistenciasView'
 import EvaluacionesRecuperacionView from './funcionalidades/evaluacion-bloque/EvaluacionesRecuperacionView'
 import BoletasView from './funcionalidades/BoletasView'
 import ReportesView from './funcionalidades/ReportesView'
@@ -10,7 +11,6 @@ import ProcesosVariosView from './funcionalidades/ProcesosVariosView'
 function ControlEscolarMenu({ activeFunction }) {
   const [currentView, setCurrentView] = useState('inicio')
 
-  // Actualizar vista cuando venga acción desde el menú
   useEffect(() => {
     if (activeFunction) {
       setCurrentView(activeFunction)
@@ -40,6 +40,8 @@ function ControlEscolarMenu({ activeFunction }) {
         return <AsignacionTallerView />
       case 'evaluacion_bloque':
         return <EvaluacionBloqueView />
+      case 'inasistencias':
+        return <InasistenciasView />
       case 'evaluaciones_recuperacion':
         return <EvaluacionesRecuperacionView />
       case 'boletas':
@@ -60,7 +62,6 @@ function ControlEscolarMenu({ activeFunction }) {
 
   return (
     <div className="space-y-6">
-      {/* Contenido principal */}
       {renderContent()}
     </div>
   )

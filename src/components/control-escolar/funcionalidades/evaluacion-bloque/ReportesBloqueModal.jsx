@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useAuth } from '../../../../context/AuthContext'
 import {
+  AREAS_CURRICULARES,
   BLOQUES,
   GRADOS_VALIDOS,
   GRUPOS_POR_TURNO,
@@ -22,7 +23,7 @@ const REPORTES = [
     label: 'Concentrados calif. y recomend. por grupo',
     icon: 'rate_review',
     scope: 'grupo',
-    desc: 'Calificaciones con campo de recomendación pedagógica para cada alumno del grupo.',
+    desc: 'Tabla horizontal con la calificación (C) y espacio de observaciones (O) de cada materia, promedio de bloque, Educación Socioemocional y Vida Saludable.',
   },
   {
     id: 'conc_inas_grupo',
@@ -35,15 +36,16 @@ const REPORTES = [
     id: 'conc_cal_asig',
     label: 'Concentrados calif. por asignatura',
     icon: 'menu_book',
-    scope: 'asignatura',
-    desc: 'Comparativo de calificaciones de todos los grupos del grado en una asignatura específica.',
+    scope: 'grupo',
+    needsAsignatura: true,
+    desc: 'Calificaciones de todos los bloques para una asignatura específica del grupo seleccionado.',
   },
   {
     id: 'conc_cal_tec',
     label: 'Concentrados calif. por Tecnología',
     icon: 'build',
-    scope: 'grupo',
-    desc: 'Concentrado exclusivo de la asignatura Tecnología para el grupo, diferenciado por taller.',
+    scope: 'taller',
+    desc: 'Concentrado de Tecnología para todos los grupos del turno que pertenecen al taller seleccionado.',
   },
   {
     id: 'list_repr_turno',
@@ -63,16 +65,17 @@ const REPORTES = [
     id: 'list_repr_grupo',
     label: 'Listado de reprobados por grupo',
     icon: 'group_remove',
-    scope: 'grupo',
-    desc: 'Alumnos con materias reprobadas dentro del grupo seleccionado.',
+    scope: 'turno',
+    needsGrupo: true,
+    desc: 'Alumnos con materias reprobadas en el grupo seleccionado, mostrando los 3 grados.',
   },
   {
     id: 'reporte_estadistico',
     label: 'Reporte estadístico',
     icon: 'bar_chart',
-    scope: 'turno',
+    scope: 'grado',
     sublabel: 'Promedios / Aprob. / Reprob. / %',
-    desc: 'Cuadro estadístico con promedios, totales de aprobados, reprobados y porcentajes por grupo y asignatura.',
+    desc: 'Resumen estadístico por grupo: promedios, reprobados, aprobados y porcentajes por asignatura. Incluye totales de grado.',
   },
 ]
 
@@ -83,7 +86,18 @@ const SCOPE_BADGE = {
   grado:      { label: 'Por grado',      color: 'bg-indigo-100 text-indigo-700' },
   turno:      { label: 'Por turno',      color: 'bg-amber-100 text-amber-700' },
   asignatura: { label: 'Por asignatura', color: 'bg-emerald-100 text-emerald-700' },
+  taller:     { label: 'Por taller',     color: 'bg-teal-100 text-teal-700' },
 }
+
+const TALLERES = [
+  'ADMINISTRACION CONTABLE',
+  'CONFEC. VESTIDO E IND. TEXTIL',
+  'DISENO DE CIRCUITOS ELECTRICOS',
+  'DISENO INDUSTRIAL',
+  'MECANICA',
+  'ELECTRONICA',
+  'INFORMATICA',
+]
 
 // ─── Componente principal ────────────────────────────────────────────────────
 
@@ -98,6 +112,7 @@ export default function ReportesBloqueModal({ onClose, defaultGrado, defaultGrup
   const [bloque, setBloque]         = useState(defaultBloque ?? 'b1')
   const [ciclo, setCiclo]           = useState(defaultCiclo ?? '')
   const [asignatura, setAsignatura] = useState('')
+  const [taller, setTaller]         = useState('')
 
   const [isGenerating, setIsGenerating] = useState(false)
   const [genError, setGenError]         = useState('')
@@ -106,13 +121,12 @@ export default function ReportesBloqueModal({ onClose, defaultGrado, defaultGrup
   const asignaturas = useMemo(() => getAsignaturasRegulares(grado), [grado])
   const badge       = SCOPE_BADGE[reporte?.scope] ?? SCOPE_BADGE.grupo
 
-  // Al cambiar reporte que requiere grupo, limpiar asignatura y viceversa
   const handleSelectReporte = (id) => {
     setReporteId(id)
     setAsignatura('')
+    setTaller('')
   }
 
-  // Al cambiar grado, limpiar grupo y asignatura
   const handleGradoChange = (val) => {
     setGrado(val)
     setGrupo('')
@@ -121,13 +135,17 @@ export default function ReportesBloqueModal({ onClose, defaultGrado, defaultGrup
 
   // Validación básica para el botón
   const canGenerar = useMemo(() => {
-    if (!bloque || !ciclo) return false
+    if (!ciclo) return false
+    if (reporte?.scope !== 'taller' && !bloque) return false
+    if (reporte?.needsAsignatura && !asignatura) return false
     if (reporte?.scope === 'grupo')      return Boolean(grado && grupo)
     if (reporte?.scope === 'grado')      return Boolean(grado)
+    if (reporte?.scope === 'turno' && reporte?.needsGrupo) return Boolean(turno && grupo)
     if (reporte?.scope === 'turno')      return Boolean(turno)
     if (reporte?.scope === 'asignatura') return Boolean(grado && asignatura)
+    if (reporte?.scope === 'taller')     return Boolean(grado && taller)
     return false
-  }, [reporte, grado, grupo, bloque, ciclo, asignatura, turno])
+  }, [reporte, grado, grupo, bloque, ciclo, asignatura, turno, taller])
 
   // ── Generar PDF ──────────────────────────────────────────────────────────────
   const handleGenerar = useCallback(async () => {
@@ -136,11 +154,35 @@ export default function ReportesBloqueModal({ onClose, defaultGrado, defaultGrup
     setGenError('')
     try {
       const helpers = await import('../../../../utils/reportesBloqueHelper')
-      const params  = { grado, grupo, bloque, cicloEscolar: ciclo, turno, asignatura }
+      const params  = { grado, grupo, bloque, cicloEscolar: ciclo, turno, asignatura, taller }
 
       switch (reporteId) {
         case 'conc_cal_grupo':
           await helpers.generarConcentradoCalificaciones(params)
+          break
+        case 'conc_cal_rec_grupo':
+          await helpers.generarCalificacionesObservaciones(params)
+          break
+        case 'conc_inas_grupo':
+          await helpers.generarConcentradoInasistencias(params)
+          break
+        case 'conc_cal_asig':
+          await helpers.generarConcentradoCaliAsignatura(params)
+          break
+        case 'conc_cal_tec':
+          await helpers.generarConcentradoCaliTecnologia(params)
+          break
+        case 'list_repr_turno':
+          await helpers.generarListadoReprobadosTurno(params)
+          break
+        case 'list_repr_grado':
+          await helpers.generarListadoReprobadosGrado(params)
+          break
+        case 'list_repr_grupo':
+          await helpers.generarListadoReprobadosGrupo(params)
+          break
+        case 'reporte_estadistico':
+          await helpers.generarReporteEstadistico(params)
           break
         default:
           setGenError('Este reporte aún no está implementado.')
@@ -151,7 +193,7 @@ export default function ReportesBloqueModal({ onClose, defaultGrado, defaultGrup
     } finally {
       setIsGenerating(false)
     }
-  }, [canGenerar, isGenerating, reporteId, grado, grupo, bloque, ciclo, turno, asignatura])
+  }, [canGenerar, isGenerating, reporteId, grado, grupo, bloque, ciclo, turno, asignatura, taller])
 
   // ── Sección de filtros según scope ────────────────────────────────────────
   const renderFiltros = () => {
@@ -173,18 +215,20 @@ export default function ReportesBloqueModal({ onClose, defaultGrado, defaultGrup
           />
         </label>
 
-        {/* Bloque — siempre presente */}
-        <label className="block">
-          <span className={labelCls}>Bloque</span>
-          <select value={bloque} onChange={(e) => setBloque(e.target.value)} className={inputCls}>
-            {BLOQUES.map((b) => (
-              <option key={b.id} value={b.id}>{b.label}</option>
-            ))}
-          </select>
-        </label>
+        {/* Bloque — no aplica para scope taller (genera los 3) */}
+        {reporte?.scope !== 'taller' && (
+          <label className="block">
+            <span className={labelCls}>Bloque</span>
+            <select value={bloque} onChange={(e) => setBloque(e.target.value)} className={inputCls}>
+              {BLOQUES.map((b) => (
+                <option key={b.id} value={b.id}>{b.label}</option>
+              ))}
+            </select>
+          </label>
+        )}
 
         {/* Grado — aparece si el scope lo requiere */}
-        {(reporte?.scope === 'grupo' || reporte?.scope === 'grado' || reporte?.scope === 'asignatura') && (
+        {(reporte?.scope === 'grupo' || reporte?.scope === 'grado' || reporte?.scope === 'asignatura' || reporte?.scope === 'taller') && (
           <label className="block">
             <span className={labelCls}>Grado</span>
             <select value={grado} onChange={(e) => handleGradoChange(e.target.value)} className={inputCls}>
@@ -214,8 +258,26 @@ export default function ReportesBloqueModal({ onClose, defaultGrado, defaultGrup
           </label>
         )}
 
-        {/* Asignatura — solo para scope asignatura */}
-        {reporte?.scope === 'asignatura' && (
+        {/* Taller — solo scope taller */}
+        {reporte?.scope === 'taller' && (
+          <label className="block">
+            <span className={labelCls}>Taller</span>
+            <select
+              value={taller}
+              onChange={(e) => setTaller(e.target.value)}
+              disabled={!grado}
+              className={`${inputCls} disabled:bg-slate-100 disabled:text-slate-400`}
+            >
+              <option value="">Selecciona</option>
+              {TALLERES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {/* Asignatura — scope asignatura O reportes que la requieran */}
+        {(reporte?.scope === 'asignatura' || reporte?.needsAsignatura) && (
           <label className="block">
             <span className={labelCls}>Asignatura</span>
             <select
@@ -225,15 +287,39 @@ export default function ReportesBloqueModal({ onClose, defaultGrado, defaultGrup
               className={`${inputCls} disabled:bg-slate-100 disabled:text-slate-400`}
             >
               <option value="">Selecciona</option>
-              {asignaturas.map((a) => (
-                <option key={a.key} value={a.key}>{a.label}</option>
+              <optgroup label="Asignaturas">
+                {asignaturas.map((a) => (
+                  <option key={a.key} value={a.key}>{a.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Áreas Curriculares">
+                {AREAS_CURRICULARES.map((a) => (
+                  <option key={a.key} value={a.key}>{a.label}</option>
+                ))}
+              </optgroup>
+            </select>
+          </label>
+        )}
+
+        {/* Grupo — solo cuando el reporte lo requiere explícitamente */}
+        {reporte?.needsGrupo && (
+          <label className="block">
+            <span className={labelCls}>Grupo</span>
+            <select
+              value={grupo}
+              onChange={(e) => setGrupo(e.target.value)}
+              className={inputCls}
+            >
+              <option value="">Selecciona</option>
+              {gruposDisponibles.map((g) => (
+                <option key={g} value={g}>Grupo {g}</option>
               ))}
             </select>
           </label>
         )}
 
-        {/* Turno — solo scope turno, modo informativo */}
-        {reporte?.scope === 'turno' && (
+        {/* Turno — solo scope turno sin needsGrupo, modo informativo */}
+        {reporte?.scope === 'turno' && !reporte?.needsGrupo && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 sm:col-span-2">
             <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-0.5">Turno activo</p>
             <p className="text-sm font-bold text-amber-900 uppercase">{turno || 'Sin turno asignado'}</p>
@@ -351,10 +437,16 @@ export default function ReportesBloqueModal({ onClose, defaultGrado, defaultGrup
                       ? 'Selecciona grado y grupo para generar este reporte.'
                     : reporte?.scope === 'grupo' && !grupo
                       ? 'Selecciona el grupo para generar este reporte.'
+                    : reporte?.needsGrupo && !grupo
+                      ? 'Selecciona el grupo para generar este reporte.'
                     : reporte?.scope === 'grado' && !grado
                       ? 'Selecciona el grado para generar este reporte.'
                     : reporte?.scope === 'asignatura' && (!grado || !asignatura)
                       ? 'Selecciona grado y asignatura para generar este reporte.'
+                    : reporte?.scope === 'taller' && !grado
+                      ? 'Selecciona el grado para continuar.'
+                    : reporte?.scope === 'taller' && !taller
+                      ? 'Selecciona el taller para generar este reporte.'
                     : 'Completa los filtros requeridos.'}
                 </p>
               </div>

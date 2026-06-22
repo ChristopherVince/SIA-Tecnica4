@@ -139,6 +139,7 @@ function InscripcionesView() {
   const [reinscripcionGradoFilter, setReinscripcionGradoFilter] = useState('')
   const [reinscripcionGrupoFilter, setReinscripcionGrupoFilter] = useState('')
   const [isConfirmReinscripcionOpen, setIsConfirmReinscripcionOpen] = useState(false)
+  const [hasSearchedReinscripcion, setHasSearchedReinscripcion] = useState(false)
 
   const turno = (currentUser?.turno ?? '').toLowerCase()
   const gruposDisponibles = GRUPOS_POR_TURNO[turno] ?? []
@@ -561,7 +562,7 @@ function InscripcionesView() {
             ...row,
             gradoNormalizado,
             elegible,
-            seleccionado: elegible,
+            seleccionado: false,
           }
         })
         .filter((row) => row.elegible)
@@ -575,21 +576,35 @@ function InscripcionesView() {
     }
   }
 
-  const openReinscripcionModal = async () => {
+  const openReinscripcionModal = () => {
     setSuccess('')
     setReinscripcionError('')
     setCicloAplicado(getCurrentCycle())
     setReinscripcionSearch('')
     setReinscripcionGradoFilter('')
     setReinscripcionGrupoFilter('')
+    setReinscripcionRows([])
+    setHasSearchedReinscripcion(false)
     setIsConfirmReinscripcionOpen(false)
     setIsReinscripcionModalOpen(true)
+  }
+
+  const handleBuscarReinscripcion = async () => {
+    setHasSearchedReinscripcion(true)
     await loadReinscripcionCandidates()
   }
 
   const toggleReinscripcionSelection = (id) => {
     setReinscripcionRows((prev) =>
       prev.map((row) => (row.id === id ? { ...row, seleccionado: !row.seleccionado } : row)),
+    )
+  }
+
+  const toggleSelectAllFiltered = () => {
+    const filteredIds = new Set(filteredReinscripcionRows.map((r) => r.id))
+    const allSelected = filteredReinscripcionRows.every((r) => r.seleccionado)
+    setReinscripcionRows((prev) =>
+      prev.map((row) => (filteredIds.has(row.id) ? { ...row, seleccionado: !allSelected } : row)),
     )
   }
 
@@ -1422,12 +1437,13 @@ function InscripcionesView() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="md:col-span-1">
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
+                <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">Buscar alumno</label>
                   <input
                     value={reinscripcionSearch}
                     onChange={(e) => setReinscripcionSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleBuscarReinscripcion()}
                     className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
                     placeholder="Nombre o CURP"
                   />
@@ -1458,6 +1474,14 @@ function InscripcionesView() {
                     ))}
                   </select>
                 </div>
+                <button
+                  type="button"
+                  onClick={handleBuscarReinscripcion}
+                  disabled={loadingReinscripcion}
+                  className="px-5 py-2.5 rounded-lg bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 disabled:opacity-60 whitespace-nowrap"
+                >
+                  {loadingReinscripcion ? 'Buscando...' : 'Buscar candidatos'}
+                </button>
               </div>
 
               {reinscripcionError && (
@@ -1471,7 +1495,18 @@ function InscripcionesView() {
                   <table className="w-full text-sm">
                     <thead className="sticky top-0 bg-white border-b border-slate-200">
                       <tr>
-                        <th className="text-left px-3 py-2 text-xs font-semibold text-slate-600">Aplicar</th>
+                        <th className="px-3 py-2 text-left">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={filteredReinscripcionRows.length > 0 && filteredReinscripcionRows.every((r) => r.seleccionado)}
+                              onChange={toggleSelectAllFiltered}
+                              disabled={filteredReinscripcionRows.length === 0}
+                              className="h-4 w-4 rounded border-slate-300"
+                            />
+                            <span className="text-xs font-semibold text-slate-600">Aplicar</span>
+                          </div>
+                        </th>
                         <th className="text-left px-3 py-2 text-xs font-semibold text-slate-600">CURP</th>
                         <th className="text-left px-3 py-2 text-xs font-semibold text-slate-600">Nombre</th>
                         <th className="text-left px-3 py-2 text-xs font-semibold text-slate-600">Grado actual</th>
@@ -1483,6 +1518,13 @@ function InscripcionesView() {
                       {loadingReinscripcion ? (
                         <tr>
                           <td colSpan="6" className="text-center py-6 text-slate-500">Cargando candidatos...</td>
+                        </tr>
+                      ) : !hasSearchedReinscripcion ? (
+                        <tr>
+                          <td colSpan="6" className="text-center py-10 text-slate-400">
+                            <span className="material-symbols-outlined block text-3xl mb-2">manage_search</span>
+                            Aplica los filtros y presiona <span className="font-semibold text-slate-600">Buscar candidatos</span> para cargar la lista.
+                          </td>
                         </tr>
                       ) : filteredReinscripcionRows.length === 0 ? (
                         <tr>

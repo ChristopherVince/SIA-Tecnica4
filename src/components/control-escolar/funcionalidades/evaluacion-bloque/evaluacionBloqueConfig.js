@@ -94,6 +94,12 @@ export const AREAS_CURRICULARES = [
   { key: 'autonomiaVidaSaludable', label: 'Integración Curricular', short: 'Int.C.' },
 ]
 
+/** Todas las materias con inasistencias (regulares + áreas curriculares). */
+export const getAllMaterias = (grado) => [
+  ...getAsignaturasRegulares(grado),
+  ...AREAS_CURRICULARES,
+]
+
 const createRegularSubjectTemplate = () => ({
   b1_cal: '',
   b1_r: '',
@@ -111,6 +117,10 @@ const createAreaCurricularTemplate = () => ({
   promedio: '',
 })
 
+// Crea un objeto de inasistencias vacío (por materia) para un bloque
+const createEmptyInasistenciasBloque = (grado) =>
+  Object.fromEntries(getAllMaterias(grado).map(({ key }) => [key, '']))
+
 export const createEmptyCalificacionesDoc = (grado) => ({
   updatedAt: null,
   periodoActual: 'B1',
@@ -121,9 +131,9 @@ export const createEmptyCalificacionesDoc = (grado) => ({
     b3: '',
   },
   inasistencias: {
-    b1: '',
-    b2: '',
-    b3: '',
+    b1: createEmptyInasistenciasBloque(grado),
+    b2: createEmptyInasistenciasBloque(grado),
+    b3: createEmptyInasistenciasBloque(grado),
   },
   asignaturasRegulares: Object.fromEntries(
     getAsignaturasRegulares(grado).map(({ key }) => [key, createRegularSubjectTemplate()]),
@@ -169,6 +179,13 @@ export const updateNestedValue = (state, path, value) => {
   return nextState
 }
 
+// Normaliza un bloque de inasistencias; el formato antiguo (número general) se descarta
+const normalizeInasistenciasBloque = (bloqueData, grado) => {
+  const empty = createEmptyInasistenciasBloque(grado)
+  if (!bloqueData || typeof bloqueData !== 'object' || Array.isArray(bloqueData)) return empty
+  return { ...empty, ...bloqueData }
+}
+
 export const normalizeLoadedCalificaciones = (data = {}, grado) => {
   const base = createEmptyCalificacionesDoc(grado)
 
@@ -180,8 +197,9 @@ export const normalizeLoadedCalificaciones = (data = {}, grado) => {
       ...(data.observaciones ?? {}),
     },
     inasistencias: {
-      ...base.inasistencias,
-      ...(data.inasistencias ?? {}),
+      b1: normalizeInasistenciasBloque(data.inasistencias?.b1, grado),
+      b2: normalizeInasistenciasBloque(data.inasistencias?.b2, grado),
+      b3: normalizeInasistenciasBloque(data.inasistencias?.b3, grado),
     },
     asignaturasRegulares: Object.fromEntries(
       getAsignaturasRegulares(grado).map(({ key }) => [
@@ -223,15 +241,14 @@ export const calculateBlockAverage = (data, blockId, grado) => {
 
   getAsignaturasRegulares(grado).forEach(({ key }) => {
     const subject = normalized.asignaturasRegulares[key] ?? {}
-    values.push(subject[`${blockPrefix}cal`])
-    values.push(subject[`${blockPrefix}r`])
+    const cal = subject[`${blockPrefix}cal`]
+    const rec = subject[`${blockPrefix}r`]
+    // CR sustituye a C cuando existe; de lo contrario se usa C
+    const efectiva = (rec !== null && rec !== undefined && rec !== '') ? rec : cal
+    values.push(efectiva)
   })
 
-  AREAS_CURRICULARES.forEach(({ key }) => {
-    const area = normalized.areasCurriculares[key] ?? {}
-    values.push(area[`${blockPrefix}cal`])
-  })
-
+  // Áreas curriculares se excluyen del promedio (no cuentan para la calificación oficial)
   return calculateAverage(values)
 }
 
@@ -252,14 +269,11 @@ export const buildPersistedCalificaciones = (data, periodoActual, grado) => {
       b3_r: parseNumberOrNull(subject.b3_r),
     }
 
-    nextSubject.promedio = calculateAverage([
-      nextSubject.b1_cal,
-      nextSubject.b1_r,
-      nextSubject.b2_cal,
-      nextSubject.b2_r,
-      nextSubject.b3_cal,
-      nextSubject.b3_r,
-    ])
+    // CR sustituye a C para B1 y B2; B3 no tiene recuperación
+    const ef1 = nextSubject.b1_r !== null ? nextSubject.b1_r : nextSubject.b1_cal
+    const ef2 = nextSubject.b2_r !== null ? nextSubject.b2_r : nextSubject.b2_cal
+    const ef3 = nextSubject.b3_cal
+    nextSubject.promedio = calculateAverage([ef1, ef2, ef3])
 
     asignaturasRegulares[key] = nextSubject
   })
@@ -278,10 +292,21 @@ export const buildPersistedCalificaciones = (data, periodoActual, grado) => {
     areasCurriculares[key] = nextArea
   })
 
-  const promedioGeneral = calculateAverage([
-    ...Object.values(asignaturasRegulares).map((subject) => subject.promedio),
-    ...Object.values(areasCurriculares).map((area) => area.promedio),
-  ])
+  // Solo asignaturas regulares (10 en 1°, 9 en 2° y 3°); áreas curriculares no cuentan
+  const promedioGeneral = calculateAverage(
+    Object.values(asignaturasRegulares).map((subject) => subject.promedio),
+  )
+
+  // Limpia valores de inasistencias a número o null
+  const inasistencias = {}
+  BLOQUES.forEach(({ id }) => {
+    inasistencias[id] = Object.fromEntries(
+      getAllMaterias(grado).map(({ key }) => [
+        key,
+        parseNumberOrNull(normalized.inasistencias?.[id]?.[key]),
+      ])
+    )
+  })
 
   return {
     ...normalized,
@@ -289,6 +314,7 @@ export const buildPersistedCalificaciones = (data, periodoActual, grado) => {
     promedioGeneral,
     asignaturasRegulares,
     areasCurriculares,
+    inasistencias,
   }
 }
 

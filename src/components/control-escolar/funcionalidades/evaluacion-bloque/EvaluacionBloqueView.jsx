@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import ReportesBloqueModal from './ReportesBloqueModal'
 import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
 import { db } from '../../../../config/firebase'
@@ -30,16 +30,29 @@ function nombreCompleto(a) {
 }
 
 // Input compacto reutilizable
-function NumInput({ value, disabled, onChange, placeholder }) {
+function NumInput({ value, disabled, onChange, placeholder, maxVal = 10 }) {
+  const handleChange = (e) => {
+    const raw = e.target.value
+    if (raw === '') { onChange(e); return }
+    const n = parseFloat(raw)
+    if (!isNaN(n)) {
+      const clamped = Math.min(Math.max(n, 0), maxVal)
+      if (clamped !== n) {
+        onChange({ target: { value: String(clamped) } })
+        return
+      }
+    }
+    onChange(e)
+  }
   return (
     <input
       type="number"
       min="0"
-      max="10"
+      max={maxVal}
       step="0.1"
       value={value}
       disabled={disabled}
-      onChange={onChange}
+      onChange={handleChange}
       placeholder={placeholder ?? '—'}
       className={`w-12 rounded border px-1 py-1 text-xs text-center focus:outline-none focus:ring-1 ${
         disabled
@@ -350,18 +363,12 @@ function EvaluacionBloqueView() {
                     rowSpan={2}
                     className="bg-slate-100 w-14 px-2 py-2 text-center font-semibold text-slate-600 border-b border-r border-slate-300"
                   >
-                    Inas.
-                  </th>
-                  <th
-                    rowSpan={2}
-                    className="bg-slate-100 w-14 px-2 py-2 text-center font-semibold text-slate-600 border-b border-r border-slate-300"
-                  >
                     Obs.
                   </th>
                   {asignaturas.map((s) => (
                     <th
                       key={s.key}
-                      colSpan={2}
+                      colSpan={1}
                       className="px-2 py-1 text-center font-semibold text-slate-700 border border-slate-300 bg-slate-100"
                       title={s.label}
                     >
@@ -385,17 +392,12 @@ function EvaluacionBloqueView() {
                   </th>
                 </tr>
 
-                {/* Fila 2: Cal / R por materia */}
+                {/* Fila 2: Cal por materia */}
                 <tr className="bg-slate-50">
                   {asignaturas.map((s) => (
-                    <Fragment key={s.key}>
-                      <th className="w-12 px-1 py-1 text-center text-[10px] font-semibold text-slate-500 border-b border-l border-slate-200">
-                        Cal
-                      </th>
-                      <th className="w-10 px-1 py-1 text-center text-[10px] font-semibold text-slate-400 border-b border-l border-r border-slate-300">
-                        R
-                      </th>
-                    </Fragment>
+                    <th key={s.key} className="w-12 px-1 py-1 text-center text-[10px] font-semibold text-slate-500 border-b border-l border-r border-slate-200">
+                      Cal
+                    </th>
                   ))}
                   {AREAS_CURRICULARES.map((a) => (
                     <th key={`${a.key}_cal`} className="w-12 px-1 py-1 text-center text-[10px] font-semibold text-slate-500 border-b border-r border-slate-200">
@@ -420,15 +422,6 @@ function EvaluacionBloqueView() {
                         {nombreCompleto(alumno)}
                       </td>
 
-                      {/* Inasistencias */}
-                      <td className="px-1.5 py-1.5 text-center border-r border-slate-200">
-                        <NumInput
-                          value={normalizeInputValue(cal.inasistencias?.[blockPrefix])}
-                          onChange={(e) => handleChange(alumno.id, `inasistencias.${blockPrefix}`, e.target.value)}
-                          placeholder="0"
-                        />
-                      </td>
-
                       {/* Observaciones */}
                       <td className="px-1.5 py-1.5 text-center border-r border-slate-200">
                         <select
@@ -445,36 +438,15 @@ function EvaluacionBloqueView() {
                       {/* Asignaturas regulares */}
                       {asignaturas.map((subject) => {
                         const calField = `${blockPrefix}_cal`
-                        const recField = `${blockPrefix}_r`
                         const calVal   = normalizeInputValue(cal.asignaturasRegulares?.[subject.key]?.[calField])
-                        const recVal   = normalizeInputValue(cal.asignaturasRegulares?.[subject.key]?.[recField])
-                        const calNum   = Number(calVal)
-                        const disableR = calVal.trim() !== '' && Number.isFinite(calNum) && calNum > 6
 
                         return (
-                          <Fragment key={subject.key}>
-                            <td className="px-1 py-1.5 text-center border-l border-slate-200">
-                              <NumInput
-                                value={calVal}
-                                onChange={(e) => {
-                                  const v = e.target.value
-                                  handleChange(alumno.id, `asignaturasRegulares.${subject.key}.${calField}`, v)
-                                  const n = Number(v)
-                                  if (v.trim() !== '' && Number.isFinite(n) && n > 6) {
-                                    handleChange(alumno.id, `asignaturasRegulares.${subject.key}.${recField}`, '')
-                                  }
-                                }}
-                              />
-                            </td>
-                            <td className="px-1 py-1.5 text-center border-l border-r border-slate-300">
-                              <NumInput
-                                value={recVal}
-                                disabled={disableR}
-                                onChange={(e) => handleChange(alumno.id, `asignaturasRegulares.${subject.key}.${recField}`, e.target.value)}
-                                placeholder={disableR ? '·' : 'R'}
-                              />
-                            </td>
-                          </Fragment>
+                          <td key={subject.key} className="px-1 py-1.5 text-center border-l border-r border-slate-200">
+                            <NumInput
+                              value={calVal}
+                              onChange={(e) => handleChange(alumno.id, `asignaturasRegulares.${subject.key}.${calField}`, e.target.value)}
+                            />
+                          </td>
                         )
                       })}
 
@@ -504,7 +476,7 @@ function EvaluacionBloqueView() {
             <p className="text-xs text-slate-500">
               {currentBlock.label} · {grado}° {grupo} · Ciclo {cicloEscolar}
               <span className="ml-3 text-slate-400">
-                Cal = calificación · R = recuperación (solo aplica si Cal ≤ 6)
+                Calificaciones: 0 – 10
               </span>
             </p>
             <button

@@ -6,7 +6,7 @@ import { getAsignaturasRegulares } from '../control-escolar/funcionalidades/eval
 
 const GRADO_LABEL = { '1': 'PRIMERO', '2': 'SEGUNDO', '3': 'TERCERO' }
 export const BLOQUE_NUM = { b1: '1', b2: '2', b3: '3' }
-const FAIL_BG = '#FFD2D2'
+const FAIL_BG = '#A0A0A0'
 
 const MARGIN  = 20
 const USABLE  = 595.28 - MARGIN * 2
@@ -37,12 +37,12 @@ const getTallerCode = (taller) => {
   return TALLER_CODE[key] ?? taller
 }
 
+// ciencias no está aquí — su short viene de getAsignaturasRegulares(grado): 'Bio.' / 'Fís.' / 'Quí.'
 const SUBJ_SHORT = {
   espanol:          'ESP',
   lenguaExtranjera: 'LE',
   artes:            'ART',
   matematicas:      'MAT',
-  ciencias:         'CIE',
   geografia:        'GEO',
   historia:         'HIS',
   formacionCivica:  'FCE',

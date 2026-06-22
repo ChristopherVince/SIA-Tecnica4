@@ -90,10 +90,6 @@ const MATRICULA_OPCIONES = [
     id: 'inicio_grupo',
     label: 'Matricula inicio de ciclo con edades (organizada por grupo)',
   },
-  {
-    id: 'actualizada_resumen',
-    label: 'Matricula actualizada resumida',
-  },
 ]
 
 const ACCENT_STYLES = {
@@ -180,8 +176,20 @@ function ReportesView() {
     if (reporteSeleccionado === 'listado') {
       return Boolean(listadoGrado && listadoGrupo)
     }
+    if (reporteSeleccionado === 'estadisticos') {
+      return Boolean(formData.cicloEscolar && formData.bloque && formData.grado)
+    }
+    if (reporteSeleccionado === 'promedios') {
+      return Boolean(formData.cicloEscolar && formData.grado && formData.grupo)
+    }
+    if (reporteSeleccionado === 'irregulares') {
+      return Boolean(formData.cicloEscolar && formData.grado)
+    }
+    if (reporteSeleccionado === 'repetidores') {
+      return Boolean(formData.cicloEscolar && formData.grado)
+    }
     return isCriteriosCompleto
-  }, [reporteSeleccionado, matriculaSeleccionada, isCriteriosCompleto, listadoGrado, listadoGrupo])
+  }, [reporteSeleccionado, matriculaSeleccionada, isCriteriosCompleto, listadoGrado, listadoGrupo, formData])
 
   const handleSeleccionarReporte = (id) => {
     setReporteSeleccionado(id)
@@ -199,22 +207,45 @@ function ReportesView() {
     setFormData(EMPTY_FORM)
   }
 
-  const resumen = useMemo(
-    () => [
-      { label: 'Ciclo', value: formData.cicloEscolar || 'Pendiente' },
+  const resumen = useMemo(() => {
+    if (reporteSeleccionado === 'promedios') {
+      return [
+        { label: 'Ciclo',  value: formData.cicloEscolar || 'Pendiente' },
+        { label: 'Grado',  value: formData.grado ? `${formData.grado}°` : 'Pendiente' },
+        { label: 'Grupo',  value: formData.grupo || 'Pendiente' },
+      ]
+    }
+    if (reporteSeleccionado === 'irregulares') {
+      return [
+        { label: 'Ciclo',  value: formData.cicloEscolar || 'Pendiente' },
+        { label: 'Grado',  value: formData.grado ? `${formData.grado}°` : 'Pendiente' },
+      ]
+    }
+    if (reporteSeleccionado === 'repetidores') {
+      return [
+        { label: 'Ciclo',  value: formData.cicloEscolar || 'Pendiente' },
+        { label: 'Grado',  value: formData.grado ? `${formData.grado}°` : 'Pendiente' },
+      ]
+    }
+    const base = [
+      { label: 'Ciclo',  value: formData.cicloEscolar || 'Pendiente' },
       { label: 'Bloque', value: formData.bloque || 'Pendiente' },
-      { label: 'Grado', value: formData.grado ? `${formData.grado}°` : 'Pendiente' },
-      { label: 'Grupo', value: formData.grupo || 'Pendiente' },
-      {
-        label: 'Asignatura',
-        value: formData.asignatura
-          ? getAsignaturasRegulares(formData.grado).find((item) => item.key === formData.asignatura)?.label ?? formData.asignatura
-          : 'Pendiente',
-      },
-      { label: 'Tecnologia', value: formData.tecnologia || 'Pendiente' },
-    ],
-    [formData],
-  )
+      { label: 'Grado',  value: formData.grado ? `${formData.grado}°` : 'Pendiente' },
+    ]
+    if (reporteSeleccionado !== 'estadisticos') {
+      base.push(
+        { label: 'Grupo', value: formData.grupo || 'Pendiente' },
+        {
+          label: 'Asignatura',
+          value: formData.asignatura
+            ? getAsignaturasRegulares(formData.grado).find((item) => item.key === formData.asignatura)?.label ?? formData.asignatura
+            : 'Pendiente',
+        },
+        { label: 'Tecnologia', value: formData.tecnologia || 'Pendiente' },
+      )
+    }
+    return base
+  }, [formData, reporteSeleccionado])
 
   const buildMatriculaSexoData = async () => {
     const GRADOS_ETIQUETAS = { '1': 'PRIMERO', '2': 'SEGUNDO', '3': 'TERCERO' }
@@ -382,6 +413,80 @@ function ReportesView() {
       a.click()
       a.remove()
       URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Error generating PDF', err)
+      alert('Error al generar el PDF. Revisa la consola para mas detalles.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleGenerarEstadistico = async () => {
+    if (!isReadyToGenerate || reporteSeleccionado !== 'estadisticos') return
+    setIsGenerating(true)
+    try {
+      const { generarReporteEstadistico } = await import('../../../utils/reportesBloqueHelper')
+      await generarReporteEstadistico({
+        grado:        formData.grado,
+        bloque:       formData.bloque,
+        cicloEscolar: formData.cicloEscolar,
+        turno,
+      })
+    } catch (err) {
+      console.error('Error generating PDF', err)
+      alert('Error al generar el PDF. Revisa la consola para mas detalles.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleGenerarRepetidores = async () => {
+    if (!isReadyToGenerate || reporteSeleccionado !== 'repetidores') return
+    setIsGenerating(true)
+    try {
+      const { generarAlumnosRepetidores } = await import('../../../utils/reportesBloqueHelper')
+      await generarAlumnosRepetidores({
+        grado:        formData.grado,
+        cicloEscolar: formData.cicloEscolar,
+        turno,
+      })
+    } catch (err) {
+      console.error('Error generating PDF', err)
+      alert('Error al generar el PDF. Revisa la consola para mas detalles.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleGenerarIrregulares = async () => {
+    if (!isReadyToGenerate || reporteSeleccionado !== 'irregulares') return
+    setIsGenerating(true)
+    try {
+      const { generarAlumnosIrregulares } = await import('../../../utils/reportesBloqueHelper')
+      await generarAlumnosIrregulares({
+        grado:        formData.grado,
+        cicloEscolar: formData.cicloEscolar,
+        turno,
+      })
+    } catch (err) {
+      console.error('Error generating PDF', err)
+      alert('Error al generar el PDF. Revisa la consola para mas detalles.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleGenerarPromedios = async () => {
+    if (!isReadyToGenerate || reporteSeleccionado !== 'promedios') return
+    setIsGenerating(true)
+    try {
+      const { generarPromediosActualizados } = await import('../../../utils/reportesBloqueHelper')
+      await generarPromediosActualizados({
+        grado:        formData.grado,
+        grupo:        formData.grupo,
+        cicloEscolar: formData.cicloEscolar,
+        turno,
+      })
     } catch (err) {
       console.error('Error generating PDF', err)
       alert('Error al generar el PDF. Revisa la consola para mas detalles.')
@@ -702,6 +807,7 @@ function ReportesView() {
                       />
                     </label>
 
+                    {reporteSeleccionado !== 'promedios' && reporteSeleccionado !== 'irregulares' && reporteSeleccionado !== 'repetidores' && (
                     <label className="block">
                       <span className="block text-xs font-semibold text-slate-600 mb-2">Bloque</span>
                       <select
@@ -715,6 +821,7 @@ function ReportesView() {
                         ))}
                       </select>
                     </label>
+                    )}
 
                     <label className="block">
                       <span className="block text-xs font-semibold text-slate-600 mb-2">Grado</span>
@@ -730,6 +837,7 @@ function ReportesView() {
                       </select>
                     </label>
 
+                    {reporteSeleccionado !== 'estadisticos' && reporteSeleccionado !== 'irregulares' && reporteSeleccionado !== 'repetidores' && (
                     <label className="block">
                       <span className="block text-xs font-semibold text-slate-600 mb-2">Grupo</span>
                       <select
@@ -743,7 +851,9 @@ function ReportesView() {
                         ))}
                       </select>
                     </label>
+                    )}
 
+                    {reporteSeleccionado !== 'estadisticos' && reporteSeleccionado !== 'promedios' && reporteSeleccionado !== 'irregulares' && reporteSeleccionado !== 'repetidores' && (
                     <label className="block">
                       <span className="block text-xs font-semibold text-slate-600 mb-2">Asignatura</span>
                       <select
@@ -759,7 +869,9 @@ function ReportesView() {
                         ))}
                       </select>
                     </label>
+                    )}
 
+                    {reporteSeleccionado !== 'estadisticos' && reporteSeleccionado !== 'promedios' && reporteSeleccionado !== 'irregulares' && reporteSeleccionado !== 'repetidores' && (
                     <label className="block">
                       <span className="block text-xs font-semibold text-slate-600 mb-2">Tecnologia</span>
                       <select
@@ -773,6 +885,7 @@ function ReportesView() {
                         ))}
                       </select>
                     </label>
+                    )}
                   </div>
                 </div>
 
@@ -793,18 +906,39 @@ function ReportesView() {
                 </div>
 
                 <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2 mb-4">
-                    <span className="material-symbols-outlined text-amber-600 text-[18px] mt-0.5">construction</span>
-                    <p className="text-sm text-amber-800">
-                      Este reporte esta <span className="font-semibold">en desarrollo</span>. La generacion de PDF se habilitara en la siguiente fase.
+                  {!isReadyToGenerate && (
+                    <p className="text-xs text-slate-400 text-center mb-3">
+                      {reporteSeleccionado === 'promedios'
+                        ? 'Selecciona ciclo, grado y grupo para continuar.'
+                        : reporteSeleccionado === 'irregulares'
+                          ? 'Selecciona ciclo y grado para continuar.'
+                          : reporteSeleccionado === 'repetidores'
+                            ? 'Selecciona ciclo y grado para continuar.'
+                            : 'Selecciona ciclo, bloque y grado para continuar.'}
                     </p>
-                  </div>
+                  )}
                   <button
                     type="button"
-                    disabled
-                    className="w-full rounded-xl font-semibold py-3 bg-slate-200 text-slate-500 cursor-not-allowed"
+                    onClick={
+                      reporteSeleccionado === 'promedios'   ? handleGenerarPromedios   :
+                      reporteSeleccionado === 'irregulares' ? handleGenerarIrregulares :
+                      reporteSeleccionado === 'repetidores' ? handleGenerarRepetidores :
+                      handleGenerarEstadistico
+                    }
+                    disabled={!isReadyToGenerate || isGenerating}
+                    className={`w-full rounded-xl font-semibold py-3 transition ${
+                      isReadyToGenerate && !isGenerating
+                        ? reporteSeleccionado === 'promedios'
+                          ? 'bg-sky-600 text-white hover:bg-sky-700'
+                          : reporteSeleccionado === 'irregulares'
+                            ? 'bg-amber-600 text-white hover:bg-amber-700'
+                            : reporteSeleccionado === 'repetidores'
+                              ? 'bg-rose-600 text-white hover:bg-rose-700'
+                              : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                        : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                    }`}
                   >
-                    Generar reporte
+                    {isGenerating ? 'Generando PDF...' : 'Generar reporte'}
                   </button>
                 </div>
               </>

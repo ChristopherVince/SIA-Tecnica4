@@ -1,7 +1,6 @@
 import { useState, Children, cloneElement } from 'react'
 import Sidebar from './Sidebar'
 import TopNavBar from './TopNavBar'
-import ControlEscolarMenu from '../control-escolar/ControlEscolarMenu'
 
 function Layout({ children, user, roleConfig, roleId }) {
   const [activeFunction, setActiveFunction] = useState(null)
@@ -10,9 +9,9 @@ function Layout({ children, user, roleConfig, roleId }) {
     setActiveFunction(action)
   }
 
-  // Pasar activeFunction a los children que lo necesiten
+  // Pasar activeFunction a cualquier componente React hijo (no a nodos DOM)
   const childrenWithActiveFunction = Children.map(children, (child) => {
-    if (child && typeof child === 'object' && child.type === ControlEscolarMenu) {
+    if (child && typeof child === 'object' && typeof child.type === 'function') {
       return cloneElement(child, { activeFunction })
     }
     return child

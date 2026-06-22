@@ -195,12 +195,16 @@ const garea = (cal, key, blk) => {
 }
 const ginas = (cal, blk) => {
   const v = cal?.inasistencias?.[blk]
-  if (v === null || v === undefined || v === '') return ''
-  return String(v)
+  if (!v || typeof v !== 'object') return ''
+  const total = Object.values(v).reduce((sum, n) => {
+    const num = Number(n)
+    return sum + (isNaN(num) ? 0 : num)
+  }, 0)
+  return total > 0 ? String(total) : ''
 }
 
 // Calificación reprobatoria (numérica menor a 6)
-const FAIL_BG = '#ffd2d2'
+const FAIL_BG = '#D8D8D8'
 const isFail = (str) => {
   if (str === '' || str === null || str === undefined) return false
   const n = Number(str)
@@ -269,6 +273,25 @@ function BoletaHalf({ alumno, cal, cicloEscolar }) {
   const gradoLabel = grado == 1 ? 'PRIMERO' : grado == 2 ? 'SEGUNDO' : grado == 3 ? 'TERCERO' : String(grado ?? '')
   const turnoLabel = String(grupo ?? '').toUpperCase() <= 'F' ? 'MATUTINO' : 'VESPERTINO'
   const subjects = getAsignaturasRegulares(grado)
+
+  // Pre-computar filas: calificación efectiva por bloque (CR reemplaza CAL; B3 sin CR)
+  const subjectRows = subjects.map((subj) => {
+    const b1c = gv(cal, subj.key, 'b1', 'cal')
+    const b1r = gv(cal, subj.key, 'b1', 'r')
+    const b2c = gv(cal, subj.key, 'b2', 'cal')
+    const b2r = gv(cal, subj.key, 'b2', 'r')
+    const b3c = gv(cal, subj.key, 'b3', 'cal')
+    const proRaw = gpro(cal, subj.key)
+    const b1eff = b1r !== '' ? b1r : b1c
+    const b2eff = b2r !== '' ? b2r : b2c
+    const anyBlockFail = isFail(b1eff) || isFail(b2eff) || isFail(b3c)
+    const proShow = anyBlockFail ? '' : fmt2(proRaw)
+    return { subj, b1c, b1r, b2c, b2r, b3c, proShow }
+  })
+
+  // Promedio general visible solo si TODAS las materias muestran promedio
+  const allProVisible = subjectRows.every((r) => r.proShow !== '')
+  const generalProm = allProVisible ? fmt2(cal?.promedioGeneral) : ''
 
   // Anchos derivados
   const W_CAL6  = W_CAL * 5 + W_PROM  // CALIFICACIONES (6 cols)
@@ -345,17 +368,9 @@ function BoletaHalf({ alumno, cal, cicloEscolar }) {
           </View>
 
           {/* Filas de asignatura */}
-          {subjects.map((subj, idx) => {
+          {subjectRows.map(({ subj, b1c, b1r, b2c, b2r, b3c, proShow }, idx) => {
             const isFirst = idx === 0
-            const isLast  = idx === subjects.length - 1
-            const b1c = gv(cal, subj.key, 'b1', 'cal')
-            const b1r = gv(cal, subj.key, 'b1', 'r')
-            const b2c = gv(cal, subj.key, 'b2', 'cal')
-            const b2r = gv(cal, subj.key, 'b2', 'r')
-            const b3c = gv(cal, subj.key, 'b3', 'cal')
-            const proRaw = gpro(cal, subj.key)
-            // Ocultar promedio de la materia si no llega a 6; si no, a 2 decimales
-            const proShow = isFail(proRaw) ? '' : fmt2(proRaw)
+            const isLast  = idx === subjectRows.length - 1
             return (
               <View key={subj.key} style={{ flexDirection: 'row' }}>
                 <Cell w={W_NUMSUB} h={HD} bL bT bR={false} bB={isLast} bold>
@@ -412,7 +427,7 @@ function BoletaHalf({ alumno, cal, cicloEscolar }) {
               borderLeftWidth: 0,
               borderColor: '#000',
             }} />
-            <Cell w={W_PROM} h={HP} bL bT bR={false} bB bold>{fmt2(cal?.promedioGeneral)}</Cell>
+            <Cell w={W_PROM} h={HP} bL bT bR={false} bB bold>{generalProm}</Cell>
             {/* INASISTENCIAS fila promedio: cierre inferior */}
             <Cell w={W_T} h={HP} bL bT={false} bR={false} bB />
             <Cell w={W_T} h={HP} bL={false} bT={false} bR={false} bB />
